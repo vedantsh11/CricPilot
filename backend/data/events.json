@@ -1,0 +1,25 @@
+[
+  {
+    "id": "EVENT001",
+    "type": "player_unavailable",
+    "timestamp": "2026-09-20T18:15:00",
+    "player_id": "P001",
+    "payload": {
+      "status": "unavailable",
+      "reason": "Late injury reported before match"
+    },
+    "processed": true
+  },
+  {
+    "id": "EVENT002",
+    "type": "weather_update",
+    "timestamp": "2026-09-20T18:20:00",
+    "payload": {
+      "rain_probability": 75.0,
+      "condition": "Cloudy",
+      "humidity": 78.0,
+      "wind_speed": 18.0
+    },
+    "processed": true
+  }
+]

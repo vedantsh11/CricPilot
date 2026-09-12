@@ -1,0 +1,24 @@
+{
+  "id": "MATCH001",
+  "team_a": "IND",
+  "team_b": "AUS",
+  "venue": "Mumbai",
+  "date": "2026-09-20",
+  "start_time": "19:30",
+  "weather": {
+    "temperature": 28.0,
+    "humidity": 62.0,
+    "rain_probability": 20.0,
+    "wind_speed": 12.0,
+    "condition": "Clear"
+  },
+  "context": {
+    "pitch_type": "balanced",
+    "batting_friendly": 0.65,
+    "bowling_friendly": 0.35,
+    "toss_winner": null,
+    "decision_after_toss": null
+  },
+  "status": "upcoming",
+  "metadata": {}
+}
