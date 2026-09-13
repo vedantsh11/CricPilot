@@ -144,7 +144,7 @@ class FantasyPlatformTool:
                 ),
             }
 
-        if not player_in.is_selectable:
+        if not player_in.is_selectable():
             return {
                 "success": False,
                 "action": "swap_player",

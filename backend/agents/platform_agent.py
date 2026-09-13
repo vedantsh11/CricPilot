@@ -151,6 +151,63 @@ class PlatformAgent:
 
         return result
 
+    def sync_current_team(self) -> dict[str, Any]:
+        """
+        Synchronize AgentState.current_team with the team currently
+        stored on the simulated platform.
+        """
+
+        platform_team = self.platform_tool.get_active_team()
+
+        if platform_team is None:
+            result = {
+                "success": False,
+                "action": "sync_current_team",
+                "message": (
+                    "No active team exists on the simulated platform."
+                ),
+            }
+
+            self.state.record_action({
+                "agent": self.name,
+                "action": "sync_current_team",
+                "success": False,
+            })
+
+            self.state.record_tool_result(
+                "fantasy_platform_sync",
+                result,
+            )
+
+            return result
+
+        self.state.set_current_team(platform_team)
+
+        result = {
+            "success": True,
+            "action": "sync_current_team",
+            "message": (
+                "Agent state synchronized with platform team."
+            ),
+            "team_id": platform_team.id,
+            "player_ids": platform_team.player_ids,
+            "total_cost": platform_team.total_cost,
+        }
+
+        self.state.record_action({
+            "agent": self.name,
+            "action": "sync_current_team",
+            "success": True,
+            "team_id": platform_team.id,
+        })
+
+        self.state.record_tool_result(
+            "fantasy_platform_sync",
+            result,
+        )
+
+        return result
+
     def get_platform_state(self) -> dict[str, Any]:
         """
         Observe the current state of the simulated platform.
