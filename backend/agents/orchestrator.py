@@ -84,11 +84,23 @@ class Orchestrator:
             state,
         )
 
+    # =========================================================
+    # OBSERVE
+    # =========================================================
+
     def observe(self) -> dict[str, Any]:
         return self.monitor_agent.monitor_once()
 
+    # =========================================================
+    # PLAN
+    # =========================================================
+
     def plan(self) -> dict[str, Any]:
         return self.planner_agent.plan()
+
+    # =========================================================
+    # GENERATE CANDIDATES
+    # =========================================================
 
     def generate_candidates(
         self,
@@ -99,6 +111,10 @@ class Orchestrator:
             limit=limit
         )
 
+    # =========================================================
+    # VALIDATE + SELECT
+    # =========================================================
+
     def validate_and_select(self) -> dict[str, Any]:
 
         selected_team = (
@@ -106,6 +122,7 @@ class Orchestrator:
         )
 
         if selected_team is None:
+
             return {
                 "success": False,
                 "team": None,
@@ -119,9 +136,14 @@ class Orchestrator:
             "team": selected_team.to_dict(),
         }
 
+    # =========================================================
+    # CREATE + VERIFY
+    # =========================================================
+
     def create_and_verify(self) -> dict[str, Any]:
 
         if self.state.current_team is None:
+
             return {
                 "success": False,
                 "stage": "create_team",
@@ -133,6 +155,7 @@ class Orchestrator:
         )
 
         if not create_result.get("success"):
+
             return {
                 "success": False,
                 "stage": "create_team",
@@ -152,6 +175,10 @@ class Orchestrator:
             "create_result": create_result,
             "verify_result": verify_result,
         }
+
+    # =========================================================
+    # FIND REPLACEMENT CANDIDATES
+    # =========================================================
 
     def _find_replacement_candidates(
         self,
@@ -200,6 +227,10 @@ class Orchestrator:
 
         return candidates
 
+    # =========================================================
+    # BUILD REPLACEMENT TEAM
+    # =========================================================
+
     def _build_replacement_team(
         self,
         player_out_id: str,
@@ -228,6 +259,10 @@ class Orchestrator:
             projected_points=current_team.projected_points,
         )
 
+    # =========================================================
+    # ADAPT TO ENVIRONMENT CHANGES
+    # =========================================================
+
     def adapt_to_changes(self) -> dict[str, Any]:
         """
         Adapt the currently active team to environment changes.
@@ -239,6 +274,7 @@ class Orchestrator:
         current_team = self.state.current_team
 
         if current_team is None:
+
             return {
                 "success": False,
                 "stage": "adaptation",
@@ -252,6 +288,7 @@ class Orchestrator:
         ]
 
         if not unavailable_players:
+
             self.monitor_agent.update_baseline()
 
             return {
@@ -273,6 +310,7 @@ class Orchestrator:
         )
 
         if not replacement_candidates:
+
             self.state.set_status("failed")
 
             return {
@@ -306,11 +344,14 @@ class Orchestrator:
             )
 
             if validation_result.get("valid", False):
+
                 selected_replacement = player_in
                 replacement_team = candidate_team
+
                 break
 
         if selected_replacement is None:
+
             self.state.set_status("failed")
 
             return {
@@ -354,6 +395,7 @@ class Orchestrator:
         )
 
         if not swap_result.get("success", False):
+
             self.state.set_status("failed")
 
             return {
@@ -372,6 +414,7 @@ class Orchestrator:
         )
 
         if not verify_result.get("verified", False):
+
             self.state.set_status("failed")
 
             return {
@@ -388,6 +431,7 @@ class Orchestrator:
         )
 
         if not sync_result.get("success", False):
+
             self.state.set_status("failed")
 
             return {
@@ -401,12 +445,15 @@ class Orchestrator:
         final_team = self.state.current_team
 
         if final_team is None:
+
             self.state.set_status("failed")
 
             return {
                 "success": False,
                 "stage": "final_validation",
-                "error": "No team exists after synchronization.",
+                "error": (
+                    "No team exists after synchronization."
+                ),
             }
 
         final_validation = (
@@ -416,6 +463,7 @@ class Orchestrator:
         )
 
         if not final_validation.get("valid", False):
+
             self.state.set_status("failed")
 
             return {
@@ -449,14 +497,35 @@ class Orchestrator:
             "current_team": final_team.to_dict(),
         }
 
+    # =========================================================
+    # INITIAL AUTONOMOUS CYCLE
+    # =========================================================
+
     def run_initial_cycle(
         self,
         candidate_limit: int = 10,
     ) -> dict[str, Any]:
 
+        # -----------------------------------------------------
+        # IMPORTANT:
+        # Start every new team-building request from a clean
+        # candidate/team state.
+        # -----------------------------------------------------
+
+        self.state.clear_candidate_teams()
+        self.state.set_current_team(None)
+
         self.state.set_status("observing")
 
+        # -----------------------------------------------------
+        # OBSERVE
+        # -----------------------------------------------------
+
         observation = self.observe()
+
+        # -----------------------------------------------------
+        # PLAN
+        # -----------------------------------------------------
 
         self.state.set_status("planning")
 
@@ -465,6 +534,7 @@ class Orchestrator:
         action = plan.get("action")
 
         if action != "GENERATE_CANDIDATES":
+
             self.state.set_status("failed")
 
             return {
@@ -477,13 +547,20 @@ class Orchestrator:
                 ),
             }
 
-        self.state.set_status("generating_candidates")
+        # -----------------------------------------------------
+        # GENERATE CANDIDATES
+        # -----------------------------------------------------
+
+        self.state.set_status(
+            "generating_candidates"
+        )
 
         optimizer_result = self.generate_candidates(
             limit=candidate_limit
         )
 
         if not optimizer_result.get("success"):
+
             self.state.set_status("failed")
 
             return {
@@ -494,11 +571,16 @@ class Orchestrator:
                 "optimizer_result": optimizer_result,
             }
 
+        # -----------------------------------------------------
+        # VALIDATE + SELECT
+        # -----------------------------------------------------
+
         self.state.set_status("validating")
 
         selection_result = self.validate_and_select()
 
         if not selection_result.get("success"):
+
             self.state.set_status("failed")
 
             return {
@@ -510,11 +592,16 @@ class Orchestrator:
                 "selection_result": selection_result,
             }
 
+        # -----------------------------------------------------
+        # CREATE + VERIFY
+        # -----------------------------------------------------
+
         self.state.set_status("creating_team")
 
         platform_result = self.create_and_verify()
 
         if not platform_result.get("success"):
+
             self.state.set_status("failed")
 
             return {
@@ -526,6 +613,10 @@ class Orchestrator:
                 "selection_result": selection_result,
                 "platform_result": platform_result,
             }
+
+        # -----------------------------------------------------
+        # COMPLETE
+        # -----------------------------------------------------
 
         self.state.set_status("team_created")
 
@@ -544,6 +635,10 @@ class Orchestrator:
             ),
         }
 
+    # =========================================================
+    # ADAPTATION CYCLE
+    # =========================================================
+
     def run_adaptation_cycle(self) -> dict[str, Any]:
         """
         Run one autonomous adaptation cycle after an
@@ -559,6 +654,7 @@ class Orchestrator:
         plan = self.plan()
 
         if plan.get("action") != "REPLAN":
+
             self.state.set_status("stable")
 
             adaptation_result = {
